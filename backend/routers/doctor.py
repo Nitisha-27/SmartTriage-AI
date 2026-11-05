@@ -134,7 +134,63 @@ def complete_consultation(
 
 
 # -----------------------------------------
-# 3. Retrieve individual case details
+# 3. Retrieve audit history
+# -----------------------------------------
+
+@router.get("/{case_id}/audit")
+def get_case_audit_history(
+    case_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve the complete audit history of a patient case.
+    Records are returned in chronological order.
+    """
+
+    patient_case = (
+        db.query(Case)
+        .filter(Case.id == case_id)
+        .first()
+    )
+
+    if not patient_case:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient case not found."
+        )
+
+    audit_records = (
+        db.query(AuditLog)
+        .filter(AuditLog.case_id == case_id)
+        .order_by(
+            AuditLog.timestamp.asc(),
+            AuditLog.id.asc()
+        )
+        .all()
+    )
+
+    return {
+        "case_id": patient_case.id,
+        "patient_name": patient_case.patient_name,
+        "current_status": patient_case.status,
+        "total_audit_records": len(audit_records),
+        "audit_history": [
+            {
+                "audit_id": record.id,
+                "timestamp": record.timestamp,
+                "actor_role": record.actor_role,
+                "action": record.action,
+                "previous_value": record.previous_value,
+                "new_value": record.new_value,
+                "comment": record.comment
+            }
+            for record in audit_records
+        ]
+    }
+
+
+# -----------------------------------------
+# 4. Retrieve individual case details
 # -----------------------------------------
 
 @router.get("/{case_id}")

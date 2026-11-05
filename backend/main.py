@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from routers.cases import router as cases_router
 from routers.supervisor import router as supervisor_router
 from routers.doctor import router as doctor_router
+from routers.analytics import router as analytics_router
 
 
 app = FastAPI(
@@ -16,9 +17,11 @@ app = FastAPI(
 )
 
 
+# Register API routers
 app.include_router(cases_router)
 app.include_router(supervisor_router)
 app.include_router(doctor_router)
+app.include_router(analytics_router)
 
 
 @app.get("/")
