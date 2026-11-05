@@ -1,21 +1,28 @@
 # Python
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
 
-# Environment variables
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
 
-# Next.js
-.next/
-node_modules/
-
-# Data files
+# Datasets and generated data
 data/
 *.csv
+*.edf
 
-# Model artifacts
-*.pkl
+# Frontend
+node_modules/
+.next/
+out/
+*.tsbuildinfo
 
 # IDE
 .vscode/
+
+# OS
+.DS_Store
+Thumbs.db
