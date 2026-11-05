@@ -4,25 +4,27 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# Environment variables and secrets
+# Environment files
 .env
 .env.*
 !.env.example
 
-# Datasets and generated data
+# Datasets
 data/
 *.csv
 *.edf
 
-# Frontend
+# Node.js
 node_modules/
 .next/
 out/
 *.tsbuildinfo
 
-# IDE
+# IDE and OS
 .vscode/
-
-# OS
 .DS_Store
 Thumbs.db
+
+# Logs and databases
+*.log
+*.db
