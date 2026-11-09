@@ -6,7 +6,7 @@ from routers.cases import router as cases_router
 from routers.supervisor import router as supervisor_router
 from routers.doctor import router as doctor_router
 from routers.analytics import router as analytics_router
-
+from routers.auth import router as auth_router
 
 app = FastAPI(
     title="SmartTriage AI",
@@ -31,6 +31,7 @@ app.include_router(cases_router)
 app.include_router(supervisor_router)
 app.include_router(doctor_router)
 app.include_router(analytics_router)
+app.include_router(auth_router)
 
 
 @app.get("/")

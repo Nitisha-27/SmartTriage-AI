@@ -7,6 +7,8 @@ from nlp_engine import (
     build_soap
 )
 
+from safety_engine import generate_safety_alerts
+
 from model_loader import (
     get_triage_prediction,
     get_shap_explanation
@@ -32,8 +34,9 @@ def assess_patient(
     """
     Integrated SmartTriage prototype assessment.
 
-    The ML output is experimental and based on synthetic data.
-    It must not be used as a standalone clinical decision.
+    XGBoost is an experimental model trained on synthetic data.
+    Safety alerts are generated independently using prototype rules.
+    Neither component is clinically validated.
     """
 
     # 1. Input validation
@@ -100,7 +103,7 @@ def assess_patient(
         # Prototype age feature; not a clinical risk rule.
         age_risk = 1 if age >= 65 else 0
 
-        # 5. XGBoost prediction
+        # 5. Experimental XGBoost prediction
 
         prediction = get_triage_prediction(
             news2_score=news2_score,
@@ -120,7 +123,19 @@ def assess_patient(
 
         soap_tier = prediction["triage_tier"]
 
-    # 7. Generate SOAP report
+    # 7. Independent rule-based safety assessment
+    # This runs regardless of whether ML prediction is available.
+
+    safety_assessment = generate_safety_alerts(
+        narrative=narrative,
+        vitals=vitals,
+        red_flags=red_flags,
+        five_parameter_score=vital_assessment[
+            "five_parameter_score"
+        ]
+    )
+
+    # 8. Generate SOAP report
 
     soap = build_soap(
         narrative=narrative,
@@ -133,7 +148,7 @@ def assess_patient(
         vitals=vitals
     )
 
-    # 8. Final assessment
+    # 9. Final assessment
 
     return {
         "patient": {
@@ -161,14 +176,17 @@ def assess_patient(
             else []
         ),
 
+        "safety_assessment": safety_assessment,
+
         "soap": soap,
 
         "review_status": "PENDING_SUPERVISOR_REVIEW",
 
         "prototype_notice": (
             "Experimental educational prototype trained on "
-            "synthetic data. Its predictions are not clinically "
-            "validated and must not guide real patient care. "
-            "Human review is required."
+            "synthetic data. ML predictions and rule-based "
+            "safety alerts are not clinically validated and "
+            "must not guide real patient care. Human review "
+            "is required."
         )
     }

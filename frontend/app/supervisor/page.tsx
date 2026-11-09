@@ -21,6 +21,22 @@ import Header from "@/components/Header";
 type TriageTier = "Routine" | "Urgent" | "Emergent";
 type ReviewAction = "APPROVE" | "OVERRIDE";
 
+interface SafetyAlert {
+  code: string;
+  category: string;
+  message: string;
+  severity: string;
+  source: string;
+}
+
+interface SafetyAssessment {
+  alerts: SafetyAlert[];
+  alert_count: number;
+  has_safety_alert: boolean;
+  engine: string;
+  notice: string;
+}
+
 interface PatientCase {
   case_id: number;
   patient_name: string;
@@ -32,9 +48,10 @@ interface PatientCase {
   syndrome_match: string | null;
   syndrome_similarity: number | null;
   news2_score: number | null;
-  detected_red_flags: string[] | null;
+  detected_red_flags: Record<string, string> | null;
   missing_fields: string[] | null;
   shap_explanation: unknown;
+  safety_assessment: SafetyAssessment | null;
   status: string;
   created_at: string;
 }
@@ -202,6 +219,13 @@ export default function SupervisorPage() {
   )
     ? selectedCase.shap_explanation
     : [];
+
+  const redFlagEntries = Object.entries(
+    selectedCase?.detected_red_flags || {}
+  );
+
+  const safetyAssessment = selectedCase?.safety_assessment;
+  const safetyAlerts = safetyAssessment?.alerts || [];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -436,6 +460,104 @@ export default function SupervisorPage() {
                     </p>
                   </div>
 
+                  {/* Independent safety alerts */}
+                  <div
+                    className={`rounded-xl border p-6 shadow-sm ${
+                      safetyAssessment?.has_safety_alert
+                        ? "border-red-300 bg-red-50"
+                        : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle
+                          size={19}
+                          className={
+                            safetyAssessment?.has_safety_alert
+                              ? "text-red-600"
+                              : "text-slate-500"
+                          }
+                        />
+                        <h3 className="font-semibold text-slate-800">
+                          Independent Safety Alerts
+                        </h3>
+                      </div>
+
+                      {safetyAssessment && (
+                        <span
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                            safetyAssessment.has_safety_alert
+                              ? "border-red-300 bg-white text-red-700"
+                              : "border-slate-300 bg-slate-50 text-slate-600"
+                          }`}
+                        >
+                          {safetyAssessment.alert_count} alert
+                          {safetyAssessment.alert_count === 1 ? "" : "s"}
+                        </span>
+                      )}
+                    </div>
+
+                    {!safetyAssessment ? (
+                      <p className="text-sm text-slate-600">
+                        Safety assessment unavailable for this case. It may
+                        have been created before the independent safety engine
+                        was added. Do not interpret missing data as absence of
+                        risk.
+                      </p>
+                    ) : safetyAlerts.length > 0 ? (
+                      <div className="space-y-3">
+                        {safetyAlerts.map((alert, index) => (
+                          <div
+                            key={`${alert.code}-${index}`}
+                            className="rounded-lg border border-red-200 bg-white p-4"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  {alert.category}
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-slate-800">
+                                  {alert.code.replaceAll("_", " ")}
+                                </p>
+                              </div>
+
+                              <span
+                                className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
+                                  alert.severity === "HIGH"
+                                    ? "border-red-300 bg-red-100 text-red-800"
+                                    : alert.severity === "MODERATE"
+                                    ? "border-amber-300 bg-amber-100 text-amber-800"
+                                    : "border-slate-300 bg-slate-100 text-slate-700"
+                                }`}
+                              >
+                                {alert.severity}
+                              </span>
+                            </div>
+
+                            <p className="mt-2 text-sm leading-6 text-slate-700">
+                              {alert.message}
+                            </p>
+                            <p className="mt-2 text-xs text-slate-400">
+                              Source: {alert.source}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-600">
+                        The prototype safety engine did not generate alerts
+                        for this case. This does not establish that the case
+                        is safe or replace professional assessment.
+                      </p>
+                    )}
+
+                    {safetyAssessment?.notice && (
+                      <p className="mt-4 border-t border-slate-200 pt-3 text-xs leading-5 text-slate-500">
+                        {safetyAssessment.notice}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Red flags */}
                   <div className="rounded-xl border bg-white p-6 shadow-sm">
                     <div className="mb-3 flex items-center gap-2">
@@ -449,22 +571,25 @@ export default function SupervisorPage() {
                       </h3>
                     </div>
 
-                    {selectedCase.detected_red_flags?.length ? (
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCase.detected_red_flags.map(
-                          (flag, index) => (
-                            <span
-                              key={`${flag}-${index}`}
-                              className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700"
-                            >
+                    {redFlagEntries.length > 0 ? (
+                      <div className="space-y-2">
+                        {redFlagEntries.map(([flag, description]) => (
+                          <div
+                            key={flag}
+                            className="rounded-lg border border-red-200 bg-red-50 p-3"
+                          >
+                            <p className="text-sm font-semibold text-red-800">
                               {flag}
-                            </span>
-                          )
-                        )}
+                            </p>
+                            <p className="mt-1 text-xs text-red-700">
+                              {description}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <p className="text-sm text-slate-500">
-                        No red flags were detected by the prototype.
+                        No NLP red flags were recorded for this case. This does not establish that the case is safe.
                       </p>
                     )}
                   </div>

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import case
 
-from dependencies import get_db
+from dependencies import get_db, require_roles
 from models import Case, AuditLog
 from schemas import DoctorComplete
 
@@ -20,7 +20,10 @@ router = APIRouter(
 
 @router.get("/queue")
 def get_doctor_queue(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(
+        require_roles("doctor", "admin")
+    )
 ):
     """
     Retrieve supervisor-approved cases.
@@ -68,7 +71,10 @@ def get_doctor_queue(
 @router.post("/doctor/complete")
 def complete_consultation(
     consultation: DoctorComplete,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(
+        require_roles("doctor", "admin")
+    )
 ):
 
     patient_case = (
@@ -105,7 +111,7 @@ def complete_consultation(
 
     audit_entry = AuditLog(
         case_id=patient_case.id,
-        actor_role="DOCTOR",
+        actor_role=current_user.role.upper(),
         action="CONSULTATION_COMPLETED",
         previous_value=previous_status,
         new_value="COMPLETED",
@@ -129,6 +135,8 @@ def complete_consultation(
         "case_id": patient_case.id,
         "doctor_notes": patient_case.doctor_notes,
         "referral_facility": patient_case.referral_facility,
+        "completed_by": current_user.full_name,
+        "completed_by_role": current_user.role,
         "status": patient_case.status
     }
 
@@ -140,10 +148,13 @@ def complete_consultation(
 @router.get("/{case_id}/audit")
 def get_case_audit_history(
     case_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(
+        require_roles("supervisor", "doctor", "admin")
+    )
 ):
     """
-    Retrieve the complete audit history of a patient case.
+    Retrieve the audit history of a patient case.
     Records are returned in chronological order.
     """
 
@@ -196,7 +207,10 @@ def get_case_audit_history(
 @router.get("/{case_id}")
 def get_case_details(
     case_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(
+        require_roles("supervisor", "doctor", "admin")
+    )
 ):
 
     patient_case = (

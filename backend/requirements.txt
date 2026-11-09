@@ -16,3 +16,6 @@ xgboost==2.1.4
 shap==0.46.0
 
 spacy==3.8.7
+
+PyJWT==2.10.1
+pwdlib[argon2]==0.2.1

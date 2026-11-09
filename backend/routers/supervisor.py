@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from dependencies import get_db
+from dependencies import get_db, require_roles
 from models import Case, AuditLog
 from schemas import SupervisorReview
 
@@ -22,7 +22,10 @@ VALID_TIERS = ["Routine", "Urgent", "Emergent"]
 
 @router.get("/pending")
 def get_pending_cases(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(
+        require_roles("supervisor", "admin")
+    )
 ):
     cases = (
         db.query(Case)
@@ -48,7 +51,8 @@ def get_pending_cases(
                 "detected_red_flags": case.detected_red_flags,
                 "missing_fields": case.missing_fields,
                 "shap_explanation": case.shap_explanation,
-                "status": case.status,
+"safety_assessment": case.safety_assessment,
+"status": case.status,
                 "created_at": case.created_at
             }
             for case in cases
@@ -63,7 +67,10 @@ def get_pending_cases(
 @router.post("/supervisor/review")
 def review_case(
     review: SupervisorReview,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(
+        require_roles("supervisor", "admin")
+    )
 ):
 
     # Find patient case
@@ -127,7 +134,10 @@ def review_case(
         if verified_tier != case.ai_triage_tier:
             raise HTTPException(
                 status_code=400,
-                detail="Approved tier must match the AI-suggested tier. Use OVERRIDE to change it."
+                detail=(
+                    "Approved tier must match the AI-suggested tier. "
+                    "Use OVERRIDE to change it."
+                )
             )
 
     # Override must change the suggested tier
@@ -149,11 +159,11 @@ def review_case(
     case.supervisor_action = action
     case.status = "APPROVED_FOR_DOCTOR"
 
-    # Create audit record
+    # Create audit record using authenticated role
 
     audit_entry = AuditLog(
         case_id=case.id,
-        actor_role="SUPERVISOR",
+        actor_role=current_user.role.upper(),
         action=(
             "SUPERVISOR_APPROVED"
             if action == "APPROVE"
@@ -183,5 +193,7 @@ def review_case(
         "human_verified_tier": case.human_verified_tier,
         "supervisor_action": case.supervisor_action,
         "supervisor_comment": case.supervisor_comment,
+        "reviewed_by": current_user.full_name,
+        "reviewer_role": current_user.role,
         "status": case.status
     }

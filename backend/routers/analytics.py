@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from dependencies import get_db
+from dependencies import get_db, require_roles
 from models import Case
 
 
@@ -26,10 +26,12 @@ REVIEWED_STATUSES = [
 
 @router.get("/summary")
 def get_analytics_summary(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles("supervisor", "admin"))
 ):
     """
     Retrieve overall case and workflow statistics.
+    Accessible to supervisors and admins.
     """
 
     total_cases = db.query(func.count(Case.id)).scalar() or 0
@@ -69,13 +71,15 @@ def get_analytics_summary(
 
 @router.get("/discordance")
 def get_discordance_analytics(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles("supervisor", "admin"))
 ):
     """
     Calculate the percentage of reviewed cases
     where the supervisor changed the AI prediction.
 
     Cases without an AI prediction are excluded.
+    Accessible to supervisors and admins.
     """
 
     reviewed_cases = (
@@ -128,11 +132,13 @@ def get_discordance_analytics(
 
 @router.get("/triage-distribution")
 def get_triage_distribution(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles("supervisor", "admin"))
 ):
     """
     Compare AI-generated and supervisor-verified
     triage tier distributions.
+    Accessible to supervisors and admins.
     """
 
     all_cases = db.query(Case).all()

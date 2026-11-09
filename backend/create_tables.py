@@ -1,6 +1,6 @@
 
 from database import engine, Base
-import models  # Registers Case and AuditLog models
+import models  # Registers User, Case and AuditLog models
 
 
 def create_tables():

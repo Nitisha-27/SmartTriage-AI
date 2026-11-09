@@ -56,14 +56,23 @@ RED_FLAG_PHRASES = {
     "radiating to left arm":
         "Possible cardiac warning symptom",
 
+    "radiating to the left arm":
+        "Possible cardiac warning symptom",
+
     "crushing chest":
         "Possible acute coronary syndrome warning symptom",
+
+    "severe chest pain":
+        "Potential serious cardiac warning symptom",
 
     "facial droop":
         "Possible stroke warning symptom",
 
     "arm weakness":
         "Possible focal neurological deficit",
+
+    "speech difficulty":
+        "Possible speech disturbance",
 
     "confused":
         "Possible altered mental status",
@@ -75,6 +84,9 @@ RED_FLAG_PHRASES = {
         "Possible meningeal irritation",
 
     "cannot breathe":
+        "Possible severe respiratory distress",
+
+    "severe breathlessness":
         "Possible severe respiratory distress",
 
     "unconscious":
@@ -152,6 +164,14 @@ CLINICAL_TERMS = {
     "hypertension": "MEDICAL_HISTORY",
     "diabetes": "MEDICAL_HISTORY",
     "aspirin": "MEDICATION",
+    "central chest pain": "CHEST_PAIN",
+"severe chest pain": "CHEST_PAIN",
+"crushing chest": "CHEST_PAIN",
+"sweating": "ASSOCIATED_SYMPTOM",
+"diaphoresis": "ASSOCIATED_SYMPTOM",
+"nausea": "ASSOCIATED_SYMPTOM",
+"palpitations": "CARDIAC_SYMPTOM",
+"jaw pain": "PAIN_LOCATION",
 }
 
 

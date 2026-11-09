@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     JSON,
+    Boolean,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -45,8 +46,12 @@ class Case(Base):
     syndrome_similarity = Column(Float, nullable=True)
 
     # NEWS2 and ML results
+   # NEWS2 and ML results
     news2_score = Column(Integer, nullable=True)
     shap_explanation = Column(JSON, default=list)
+
+# Independent safety assessment
+    safety_assessment = Column(JSON, nullable=True)
 
     ai_triage_tier = Column(String(50), nullable=True)
     ai_confidence = Column(Float, nullable=True)
@@ -105,4 +110,39 @@ class AuditLog(Base):
     case = relationship(
         "Case",
         back_populates="audit_logs"
+    )
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    full_name = Column(String(150), nullable=False)
+
+    email = Column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=False
+    )
+
+    hashed_password = Column(String(255), nullable=False)
+
+    role = Column(
+        String(30),
+        nullable=False,
+        default="health_worker"
+    )
+
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        default=True
+    )
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
     )
